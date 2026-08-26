@@ -1,12 +1,15 @@
 #include <iostream>
 #include "httplib.h"
 #include "CrossPlatform.hpp"
+#include "json.hpp"
 #include <string>
 #include <fstream>
 #include <cstdlib>
 #include <map>
 #include <variant>
 #include <cctype>
+
+using json = nlohmann::json;
 
 
 //helper function prototypes
@@ -112,7 +115,7 @@ struct Model {
         file << to_string();
     }
 
-    std::string to_string() const
+    std::string to_string() const //more like build_model_config
     {
         std::string text;
         text += "FROM ";
@@ -154,9 +157,9 @@ struct Model {
 
     std::string run(std::string prompt) const
     {
-        std::string command = "ollama run test --hidethinking --nowordwrap \"";
-        command += prompt;
-        command += "\" > model_output.txt";
+        std::string command = "ollama run test --hidethinking --nowordwrap ";
+        command += "\"" + prompt + "\"";
+        command += " > model_output.txt";
         std::system(command.c_str());
         return readFile("model_output.txt");
     }
@@ -169,7 +172,7 @@ Model load_model_conf(std::string model_name, std::string filepath);
 
 
 int main(int argc, char** argv)
-    {
+{
     srand(now());
 
     std::cout << "starting server..." << std::endl;
