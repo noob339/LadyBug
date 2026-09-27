@@ -4,6 +4,8 @@
 #include <string>
 #include <chrono>
 #include <iostream>
+#include "GenRequest.hpp"
+#include "ModelConfig.hpp"
 #include "httplib.h"
 #include "json.hpp"
 
@@ -36,14 +38,15 @@ class OllamaClient{
 
     private:
         const std::string baseAdd {"http://localhost:11434"};
-        httplib::Client client{baseAdd};
+        httplib::Client client {baseAdd};
         nlohmann::json defaultJson;
         std::chrono::seconds connectionTimeout{2}; 
         std::chrono::seconds writeTimeout{10};
         std::chrono::seconds readTimeout{90};
 
 
-        std::string statusError (int code){
+        // uses no data members so func belongs to class, not individual instance obj
+        static std::string statusError (int code){
 
             std::string errorMsg;
 
@@ -94,11 +97,16 @@ class OllamaClient{
                 })");
         }
 
+        // OllamaClient(std::string baseAdd, httplib::Client client) 
 
-        OllamaRes generate(std::string prompt){
+       
+
+
+        // const OllamaRes generate(GenRequest& req)
+        const OllamaRes generate(const std::string prompt){
 
             if(prompt.empty()){ //if empty return a new line, let the api consumer decide what he wants to do after that
-                return OllamaRes("empty", false);
+                return OllamaRes("\n", false);
             }
 
             nlohmann::json genJson = defaultJson;
@@ -117,7 +125,7 @@ class OllamaClient{
                 std::cerr << response.response << "\n\n"; 
             } else if (res->status != 200){ 
                 response.response = statusError(res->status) + '\n' 
-                + "Ollama response: " + res->body + "\n\n";
+                + "Ollama response: " + res->body;
                 std::cerr << response.response << "\n\n"; 
             } else{
 
@@ -132,32 +140,6 @@ class OllamaClient{
                         response.success = false;
                     }
 
-
-                    //option 2, longer but more explicit 
-                    //check if its an object
-                    //check if the json has a response keyword
-                    //check if that value is a string
-                    //check if the response empty
-
-                    // if(oll_res.is_object()){
-
-                    //     if(oll_res.contains("response")){
-
-                    //         if(oll_res["response"].is_string()){
-                                
-                    //             if(oll_res["response"] == ""){
-                    //                 response.response = "empty";
-                    //                 response.success = false;
-                    //             } else{
-                    //                 response.response = oll_res["response"];
-                    //                 response.success = true;
-                    //             }
-                    //         }
-                    //     }
-                    // } else {
-                    //     //a whole bunch of nested else for every if stating the why it failed
-                    // }
-
                 } catch (const nlohmann::json::exception& ex){
                     response.response = ex.what();
                     std::cerr << response.response << std::endl;  
@@ -165,6 +147,56 @@ class OllamaClient{
             }
             return response;
         }
+
+        const OllamaRes create(const ModelConfig& config){
+
+            //todo
+
+            //pass in a model config
+            //this modelconfig we turn into json using to_json
+            nlohmann::json req = config; //store it 
+            nlohmann::json oll_res;
+
+            auto res = client.Post("/api/create", req.dump(), "application/json");
+
+            OllamaRes response;
+
+            if(!res){
+                response.response = "Connection error: " + httplib::to_string(res.error());
+                std::cerr << response.response << "\n\n"; 
+            } else if (res->status != 200){ 
+                response.response = statusError(res->status) + '\n' 
+                + "Ollama response: " + res->body;
+                std::cerr << response.response << "\n\n"; 
+            } else{
+
+                try {
+                    oll_res = nlohmann::json::parse(res->body);
+
+                    //cleaner shorter but less explicit option
+                    response.response = oll_res.at("status").get<std::string>();
+                    response.success = true;
+                } catch (const nlohmann::json::exception& ex){
+                    response.response = ex.what();
+                    std::cerr << response.response << std::endl;  
+                }
+            }
+            return response;
+
+        }
+
+         const std::string remove(std::string model){
+
+            //todo
+
+
+            return "model deleted\n";
+        }
+
+        // const ModelConfig show(std::string model){
+        //     show api
+        // }
+
 };
 
 #endif
