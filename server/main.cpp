@@ -179,38 +179,6 @@ Model load_model_conf(std::string model_name, std::string filepath);
 
 
 
-/* My work */
-
-
-
-class LadyBugServer {
-
-    //this is where we implement the server that the front end uses to call it to be able to generate or create or any other endpoint 
-    
-
-};
-
-
-
-struct GenerationRequest {
-
-    struct options{
-    };
-
-    private:
-
-    public:
-
-};
-
-
-struct ChatRequest {
-
-};
-
-
-
-
 //MAIN FUNCTION
 
 int main(int argc, char** argv)
