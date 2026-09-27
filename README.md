@@ -15,8 +15,6 @@ LadyBug explores a simple, decoupled approach to running a locally hosted AI ass
 
 The long-term goal is to develop LadyBug into a modular, self-hosted AI platform that can run on personal hardware such as a Raspberry Pi-based home server. The project currently focuses on establishing a small, understandable MVP before introducing persistence, model management, plugins, or cloud hosting.
 
-The repository is currently named `LLAMA_BMCC`, but the project and interface are transitioning to the name **LadyBug**.
-
 ## Project Status 
 
 LadyBug is currently a working demo under active development. The present MVP is intentionally narrow: submit a prompt through the web interface, send it through the C++ server to a local Ollama model, and display the model's response.
@@ -61,8 +59,8 @@ Make sure Ollama is installed and running before starting LadyBug.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/noob339/LLAMA_BMCC.git
-cd LLAMA_BMCC
+git clone https://github.com/noob339/LadyBug.git
+cd LadyBug
 ```
 
 ### 2. Download the model
@@ -139,10 +137,7 @@ PostgreSQL or another database may be added later for threads, history, projects
 
 ## Development Roadmap
 
-LadyBug is currently in its early setup stage. You can view the
-temporary [development board](https://docs.google.com/spreadsheets/d/1DVUpXzJTxE8OKFFyNbWwE7Y2Eh3aTayy_FgmFKcwKVo/edit?usp=sharing) to see current progress.
-
-The board is read-only and will eventually be replaced by GitHub Projects.
+LadyBug is currently in its early setup stage. Current work is tracked in a GitHub Project linked to this repository, with implementation TODOs kept beside the relevant code.
 
 Planned areas of development include:
 
