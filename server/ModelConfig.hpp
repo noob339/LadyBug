@@ -22,8 +22,16 @@
     //decide unknown-key behavior
     //Parameters gets its own serializer/deserializer
     //clean up/default constructors
+    //roll out the other parameters ... dang lol, this a lot but good practice 
 
-
+    struct Parameters {
+        std::optional<int> num_ctx; 
+        std::optional<int> num_predict;
+        //std::optional<float> temperature;
+        //std::optional<float> top_p;
+        //std::optional<int> top_k;
+        //std::optional<double> repeat_penalty;
+    };
 
 
 
@@ -34,14 +42,7 @@ class ModelConfig {
 
     private: 
 
-        struct Parameters {
-            std::optional<int> num_ctx; 
-            std::optional<int> num_predict;
-            //std::optional<float> temperature;
-            //std::optional<float> top_p;
-            //std::optional<int> top_k;
-            //std::optional<double> repeat_penalty;
-        };
+        
 
         std::string model; //required and cannot be empty
         std::string from; //required and cannot be empty
@@ -58,6 +59,10 @@ class ModelConfig {
 
         ModelConfig(std::string model, std::string from, std::string system) :
              model{model}, from {from}, system{system}
+        {}
+
+        ModelConfig(std::string model, std::string from, std::string system, Parameters params) :
+             model{model}, from {from}, system{system}, parameters{params}
         {}
 
         //td: remove inline and place it all on a cpp file
