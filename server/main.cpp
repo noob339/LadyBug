@@ -1,6 +1,7 @@
 #include <iostream>
 #include "httplib.h"
 #include "CrossPlatform.hpp"
+#include "json.hpp"
 #include <string>
 #include <fstream>
 #include <cstdlib>
@@ -9,16 +10,22 @@
 #include <cctype>
 
 
+
+using json = nlohmann::json;
+
+
 //helper function prototypes
 std::string readFile(std::string filePath);
-size_t now();
+
 bool is_whitespace(char c);
 void skip_whitespace(const std::string& text, size_t& index);
 void skip_non_whitespace(const std::string& text, size_t& index);
 void trim_end(std::string& text);
 void escape_json(std::string& text);
+
 std::string base_model(const std::string& text);
 std::string substr(std::string& text, size_t start, size_t end);
+
 bool is_int(std::string& text);
 bool is_float(std::string& text);
 std::map<std::string, std::string> parse_params(const std::string& text);
@@ -95,8 +102,11 @@ struct BaseModel {
 };
 
 std::map<std::string, BaseModel> parse_base_models(std::string config);
+
 std::string jsonify(std::map<std::string, ParamType>& ptypes);
 std::string jsonify(std::map<std::string, BaseModel>& models);
+
+
 
 struct Model {
     std::string model_name = "test";
@@ -112,7 +122,7 @@ struct Model {
         file << to_string();
     }
 
-    std::string to_string() const
+    std::string to_string() const //more like build_model_config
     {
         std::string text;
         text += "FROM ";
@@ -154,9 +164,9 @@ struct Model {
 
     std::string run(std::string prompt) const
     {
-        std::string command = "ollama run test --hidethinking --nowordwrap \"";
-        command += prompt;
-        command += "\" > model_output.txt";
+        std::string command = "ollama run test --hidethinking --nowordwrap ";
+        command += "\"" + prompt + "\"";
+        command += " > model_output.txt";
         std::system(command.c_str());
         return readFile("model_output.txt");
     }
@@ -165,12 +175,14 @@ struct Model {
 Model load_model_conf(std::string model_name, std::string filepath);
 
 
+
+
+
+
 //MAIN FUNCTION
 
-
 int main(int argc, char** argv)
-    {
-    srand(now());
+{
 
     std::cout << "starting server..." << std::endl;
 
@@ -184,8 +196,9 @@ int main(int argc, char** argv)
     model.warm_up();
 
     httplib::Server svr;
-    // svr.set_mount_point("/", "./web"); //🚨 we will need to change this later, this tells us where to look
     svr.set_mount_point("/", "../client/dist");
+
+    
 
     svr.Get("/query", [model](const auto &req, auto &res) {
     
@@ -202,16 +215,23 @@ int main(int argc, char** argv)
 
 
 
+        //🚨 lo5w or design decisions to be made here, what is worthy of keeping or scrapping?
+                // here is where we would call generate
+                // the problem is, its done through this model construction which honestly, may be a good idea, 
+                // how do I switch the models? how do I switch the parameters
+                //is anything here worth keeping or using?
+            // THEN AGAIN, it could be called in Model's run function, would be the one to least break it tbh but my design conflicts this design. 
+                // the logic wouldn't match the models logic, all that parsing and extracting from andrews functions for what if my json being fed is handled inside the client. 
+                // welp, based on the logic presented in the google doc from chatgpt, generate goes in the model.run() function replacing the command line, 
+                // so I can modify ollama client to bend it to work as the sprint originally intended
+                // a lot of it seems useless on close examination. This was wired to work with the command line above all else, Some I can def use between the react client and the server but some of it might need to go
+                // when we send a prompt we are sending it with this pre loaded test config that has our options,
+                // how would I translate that to ollamaclient
+
+
+
         std::string model_output = model.run(prompt);
         trim_end(model_output);
-
-        // escape_json(model_output);
-
-        // response += "{\"data\":\"" + model_output + "\", \"error\":\"\", \"sucess\":true}\n";
-        // res.set_content(response, "text/json");
-        
-        // response =   "{\"data\":\"" + model_output + "\",\"error\":\"\",\"success\":true}";
-        // res.set_content(response, "application/json")
 
         res.set_content(
             model_output,
@@ -429,11 +449,6 @@ bool is_float(std::string& text)
     return is_float;
 }
 
-
-
-
-
-
 std::string substr(std::string& text, size_t start, size_t end)
 {
     return text.substr(start, end - start);
@@ -568,7 +583,6 @@ std::string jsonify(std::map<std::string, ParamType>& ptypes)
     return json;
 }
 
-
 std::string jsonify(std::map<std::string, BaseModel>& models)
 {
     std::string json;
@@ -591,12 +605,6 @@ std::string jsonify(std::map<std::string, BaseModel>& models)
     json += "]\n";
     
     return json;
-}
-
-
-size_t now()
-{
-    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 std::string readFile(std::string filePath)
@@ -645,5 +653,12 @@ Model load_model_conf(std::string model_name, std::string filepath)
     } while(false);
 
     std::cout<<"loaded model:\n"<<model.to_string()<<"\n";
+
     return model;
 }
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-# Web Service Interaction Using `curl`
+m# Web Service Interaction Using `curl`
 
 This document provides examples of how to interact with the web service running on `127.0.0.1:8080` using `curl` commands. Each endpoint is detailed with the appropriate `curl` command and the expected output.
 ## First what is curl?
