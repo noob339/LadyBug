@@ -65,6 +65,10 @@ class ModelConfig {
              model{model}, from {from}, system{system}, parameters{params}
         {}
 
+        const std::string getModel() const {
+            return model;
+        }
+
         //td: remove inline and place it all on a cpp file
         friend void to_json(nlohmann::json& j, const ModelConfig& model){ //serializer
 

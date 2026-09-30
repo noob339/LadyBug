@@ -36,15 +36,15 @@ class GenRequest {
         bool think = false; //just false for now, will think about this later
 
 
-    GenRequest(std::string model): model{model}{}
+        GenRequest(std::string model): model{model}{}
 
 
-    void setPrompt(std::string prompt){
-        this->prompt = prompt;
-    }
-    void setSystem(std::string system){
-        this->system = system;
-    }
+        void setPrompt(std::string prompt){
+            this->prompt = prompt;
+        }
+        void setSystem(std::string system){
+            this->system = system;
+        }
 
     friend void to_json(nlohmann::json& j, const GenRequest& req){
 

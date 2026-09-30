@@ -180,6 +180,47 @@ class OllamaClient{
             return response;
         }
 
+        const OllamaRes listModels(){
+
+            nlohmann::json req;
+
+            nlohmann::json oll_res_models;
+            OllamaRes response;
+
+            auto res = client.Get("/api/tags");
+
+            if(!res){
+                response.response = "Connection error: " + httplib::to_string(res.error());
+                std::cerr << response.response << "\n\n"; 
+            }else if (res->status != 200){ 
+                response.response = statusError(res->status) + '\n' 
+                + "Ollama response: " + res->body;
+                std::cerr << response.response << "\n\n"; 
+            } else{
+                try {
+                    oll_res_models = nlohmann::json::parse(res->body);
+
+                    // I need to loop through oll_res and extract the keys I need
+                    //"model", "name", "detals":"parent-model"
+                        //look at curl | jq response to develop decision tree of if, else if, else
+
+                    //then tell codex like what to look for, what to accept and how to display it
+                    //I will dump the response and return this to ladybug server
+                    //Ladybug server will then serve this
+                    //I dont even think we need to validate in the server
+                    //then dump
+
+
+                    response.response = oll_res_models.dump();
+                    response.success = true;
+                } catch (const nlohmann::json::exception& ex){
+                    response.response = ex.what();
+                    std::cerr << response.response << std::endl;  
+                }
+            }
+            return response;
+        }
+
         const OllamaRes generateStream(const GenRequest& req){
             //basically the above but keep looping until status = done
             //I mean its gonna send a lot of responses, how to handle that?

@@ -8,6 +8,8 @@
 #include <map>
 #include <variant>
 #include <cctype>
+#include "ModelConfig.hpp"
+#include "OllamaClient.hpp"
 
 
 
@@ -176,9 +178,6 @@ Model load_model_conf(std::string model_name, std::string filepath);
 
 
 
-
-
-
 //MAIN FUNCTION
 
 int main(int argc, char** argv)
@@ -186,21 +185,22 @@ int main(int argc, char** argv)
 
     std::cout << "starting server..." << std::endl;
 
-    size_t file_index = 1;
-    auto type_map = parse_param_types(readFile("./params.types"));
-    auto base_models = parse_base_models(readFile("./models.list"));
-    std::string model_name = argc > 2 ? argv[file_index++] : "test";
-    Model model = load_model_conf("test", std::string(".."));
+    std::string model = "test-lb";
+    std::string from = "qwen3:4b "; 
+    std::string system = "You are an assistant. You answer as accurate as possible and succinctly.";
+    Parameters param;
+    param.num_ctx = 8192;
+    param.num_predict = 1024;
 
-    model.load_ollama();
-    model.warm_up();
+    ModelConfig test4(model, from, system, param);
+
+    std::string gptModel = "gpt-oss:120b-cloud";
+
+
 
     httplib::Server svr;
-    svr.set_mount_point("/", "../client/dist");
 
-    
-
-    svr.Get("/query", [model](const auto &req, auto &res) {
+    svr.Get("/query", [test4, gptModel](const auto &req, auto &res) {
     
         std::string response;
         if (!req.has_param("prompt")) 
@@ -211,118 +211,116 @@ int main(int argc, char** argv)
         }
 
         std::string prompt = req.get_param_value("prompt");
-        std::cout<<prompt<<"\n";
-
-
-
-        //🚨 lo5w or design decisions to be made here, what is worthy of keeping or scrapping?
-                // here is where we would call generate
-                // the problem is, its done through this model construction which honestly, may be a good idea, 
-                // how do I switch the models? how do I switch the parameters
-                //is anything here worth keeping or using?
-            // THEN AGAIN, it could be called in Model's run function, would be the one to least break it tbh but my design conflicts this design. 
-                // the logic wouldn't match the models logic, all that parsing and extracting from andrews functions for what if my json being fed is handled inside the client. 
-                // welp, based on the logic presented in the google doc from chatgpt, generate goes in the model.run() function replacing the command line, 
-                // so I can modify ollama client to bend it to work as the sprint originally intended
-                // a lot of it seems useless on close examination. This was wired to work with the command line above all else, Some I can def use between the react client and the server but some of it might need to go
-                // when we send a prompt we are sending it with this pre loaded test config that has our options,
-                // how would I translate that to ollamaclient
-
-
-
-        std::string model_output = model.run(prompt);
-        trim_end(model_output);
-
-        res.set_content(
-            model_output,
-            "text/plain; charset=UTF-8"
-        );
-
-        std::cout<<"responding to prompt:\n"<<prompt<<"\nwith output:\n"<<model_output<<"\n";
-    });
-
-
-    svr.Get("/set_context", [&model](const auto &req, auto &res) {
-        if(!req.has_param("ctx"))
-        {
-            res.set_content("{ \"error\":\"must have param ctx for new model context.\", \"success\":false }\n", "text/json");
-            return;
-        }
-        model.context = req.get_param_value("ctx");
-        model.to_file();
-        model.load_ollama();
-        model.warm_up();
-        res.set_content("{\"error\":\"\", \"success\":true}\n", "text/json");
-    });
-
-
-    svr.Get("/set_parameter", [&model, &type_map](const auto &req, auto &res) {
-        if(!req.has_param("key") || !req.has_param("value"))
-        {
-            res.set_content("{\"error\":\"must include parameters key for parameter name, and value for value.\", \"success\":false }\n", "text/json");
-            return;
-        }
-        if(type_map.count(req.get_param_value("key")) == 0) 
-        {
-            res.set_content("{\"error\":\"Error, invalid key: \'" + req.get_param_value("key") + "\'\", \"success\":false }\n", "text/json");
-            return;
-        }
-        std::string key = req.get_param_value("key");
-        std::string value = req.get_param_value("value");
-        if(!type_map[key].is_valid(value))
-        {
-            res.set_content("{\"error\":\"Error, invalid value: \'" + value + "\' for parameter: \'" + key + "\' of type: " + type_map[key].to_string() + "\", \"success\":false }\n", "text/json");
-            return;
-        }
-
-        std::cout << "updating param: " << key << " which is of type: " << type_map[key] << " with value: " << value << "\n";
-        model.parameters[req.get_param_value("key")] = req.get_param_value("value");
         
-        model.to_file();
-        model.load_ollama();
-        model.warm_up();
+        GenRequest genReq(gptModel);
+        OllamaClient client;
+        genReq.setPrompt(prompt);
 
-        res.set_content("{\"error\":\"\", \"success\":true}\n", "text/json");
-    });
+        OllamaRes resGen = client.generate(genReq);
 
-    svr.Get("/set_base_model", [&model, &base_models](const auto &req, auto &res) {
-        if(!req.has_param("model"))
-        {
-            std::string resp = "{\"error\":\"";
-            resp += "must include parameter model";
-            resp += "\", \"success\":false}";
-            res.set_content(resp, "text/json");
-            return;
+        std::string model_output;
+
+        if(resGen.success){
+            model_output = resGen.response;
+            trim_end(model_output);
+
+            res.status = 200;
+            res.set_content(
+                model_output,
+                "text/plain; charset=UTF-8"
+            );
+
+            std::cout << "DEBUG TEST: " << model_output << std::endl;
         }
-        std::string model_name = req.get_param_value("model");
-        if(base_models.count(model_name) == 0)
-        {
-            std::string resp = "{\"error\":\"";
-            resp += "Error, invalid model name: \'";
-            resp += model_name;
-            resp += "\'";
-            resp += "\", \"success\":false}";
-            res.set_content(resp, "text/json");
-            return;
-        }
+
+        //any headers I should be sending
+        //should status be set right away?
+    });
+
+    
+
+
+    // svr.Get("/set_context", [&model](const auto &req, auto &res) {
+    //     if(!req.has_param("ctx"))
+    //     {
+    //         res.set_content("{ \"error\":\"must have param ctx for new model context.\", \"success\":false }\n", "text/json");
+    //         return;
+    //     }
+    //     model.context = req.get_param_value("ctx");
+    //     model.to_file();
+    //     model.load_ollama();
+    //     model.warm_up();
+    //     res.set_content("{\"error\":\"\", \"success\":true}\n", "text/json");
+    // });
+
+
+    // svr.Get("/set_parameter", [&model, &type_map](const auto &req, auto &res) {
+    //     if(!req.has_param("key") || !req.has_param("value"))
+    //     {
+    //         res.set_content("{\"error\":\"must include parameters key for parameter name, and value for value.\", \"success\":false }\n", "text/json");
+    //         return;
+    //     }
+    //     if(type_map.count(req.get_param_value("key")) == 0) 
+    //     {
+    //         res.set_content("{\"error\":\"Error, invalid key: \'" + req.get_param_value("key") + "\'\", \"success\":false }\n", "text/json");
+    //         return;
+    //     }
+    //     std::string key = req.get_param_value("key");
+    //     std::string value = req.get_param_value("value");
+    //     if(!type_map[key].is_valid(value))
+    //     {
+    //         res.set_content("{\"error\":\"Error, invalid value: \'" + value + "\' for parameter: \'" + key + "\' of type: " + type_map[key].to_string() + "\", \"success\":false }\n", "text/json");
+    //         return;
+    //     }
+
+    //     std::cout << "updating param: " << key << " which is of type: " << type_map[key] << " with value: " << value << "\n";
+    //     model.parameters[req.get_param_value("key")] = req.get_param_value("value");
         
-        model.from_model = std::move(model_name);
-        model.to_file();
-        model.load_ollama();
-        model.warm_up();
+    //     model.to_file();
+    //     model.load_ollama();
+    //     model.warm_up();
+
+    //     res.set_content("{\"error\":\"\", \"success\":true}\n", "text/json");
+    // });
+
+    // svr.Get("/set_base_model", [&model, &base_models](const auto &req, auto &res) {
+    //     if(!req.has_param("model"))
+    //     {
+    //         std::string resp = "{\"error\":\"";
+    //         resp += "must include parameter model";
+    //         resp += "\", \"success\":false}";
+    //         res.set_content(resp, "text/json");
+    //         return;
+    //     }
+    //     std::string model_name = req.get_param_value("model");
+    //     if(base_models.count(model_name) == 0)
+    //     {
+    //         std::string resp = "{\"error\":\"";
+    //         resp += "Error, invalid model name: \'";
+    //         resp += model_name;
+    //         resp += "\'";
+    //         resp += "\", \"success\":false}";
+    //         res.set_content(resp, "text/json");
+    //         return;
+    //     }
         
-        res.set_content(std::string("{\"info\":\"") + base_models[model.from_model].to_string() + "\", \"error\":\"\", \"success\":true}\n", "text/json");
-    });
+    //     model.from_model = std::move(model_name);
+    //     model.to_file();
+    //     model.load_ollama();
+    //     model.warm_up();
+        
+    //     res.set_content(std::string("{\"info\":\"") + base_models[model.from_model].to_string() + "\", \"error\":\"\", \"success\":true}\n", "text/json");
+    // });
 
 
-    svr.Get("/base_model_options", [&base_models](const auto &req, auto &res) {
-        res.set_content(jsonify(base_models), "text/json");
-    });
+    // svr.Get("/base_model_options", [&base_models](const auto &req, auto &res) {
+    //     res.set_content(jsonify(base_models), "text/json");
+    // });
 
 
-    svr.Get("/model_parameter_options", [&type_map](const auto &req, auto &res) {
-        res.set_content(jsonify(type_map), "text/json");
-    });
+    // svr.Get("/model_parameter_options", [&type_map](const auto &req, auto &res) {
+    //     res.set_content(jsonify(type_map), "text/json");
+    // });
 
     std::cout << "Server running http://localhost:8080/." << std::endl;
     svr.listen("0.0.0.0", 8080);
