@@ -13,20 +13,24 @@ struct OllamaRes {
 
     std::string response;
     bool success;
+    int status;
 
     OllamaRes(){
         this->response = "";
         this->success = false;
+        this->status = 0;
     }
 
-    OllamaRes(std::string response){
+    OllamaRes(std::string response, int status){
         this->response = response;
         this->success = false; //many conditions where it could be false, but only one where it can be true
+        this->status = status;
     }
 
-    OllamaRes(std::string response, bool success){
+    OllamaRes(std::string response, bool successm, int status){
         this->response = response;
         this->success = success; //many conditions where it could be false, but only one where it can be true
+        this->status = status;
     }
 
 }; 
@@ -34,7 +38,6 @@ struct OllamaRes {
 
 class OllamaClient{
     //what should the program do if parsing fails? just throw, log the error and return, it failed to parse for whatever reason, malformed json, etc
-
 
     private:
         const std::string baseAdd {"http://localhost:11434"};
@@ -120,7 +123,8 @@ class OllamaClient{
             //check response
             if(!res){
                 response.response = "Connection error: " + httplib::to_string(res.error());
-                std::cerr << response.response << "\n\n"; 
+                response.status = 500;
+                std::cerr << "status code: " << response.status << "\n" << response.response << "\n\n"; 
             } else if (res->status != 200){ 
                 response.response = statusError(res->status) + '\n' 
                 + "Ollama response: " + res->body;
@@ -158,7 +162,8 @@ class OllamaClient{
             //check response
             if(!res){
                 response.response = "Connection error: " + httplib::to_string(res.error());
-                std::cerr << response.response << "\n\n"; 
+                response.status = 500;
+                std::cerr << "status code: " << response.status << "\n" << response.response << "\n\n"; 
             } else if (res->status != 200){ 
                 response.response = statusError(res->status) + '\n' 
                 + "Ollama response: " + res->body;
@@ -182,6 +187,8 @@ class OllamaClient{
 
         const OllamaRes listModels(){
 
+            //incorporate status
+
             nlohmann::json req;
 
             nlohmann::json oll_res_models;
@@ -191,7 +198,8 @@ class OllamaClient{
 
             if(!res){
                 response.response = "Connection error: " + httplib::to_string(res.error());
-                std::cerr << response.response << "\n\n"; 
+                response.status = 500;
+                std::cerr << "status code: " << response.status << "\n" << response.response << "\n\n"; 
             }else if (res->status != 200){ 
                 response.response = statusError(res->status) + '\n' 
                 + "Ollama response: " + res->body;
