@@ -3,8 +3,7 @@
 #include "OllamaClient.hpp"
 #include "LadyBugServer.hpp"
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv){
     LadyBugServer lbserver;
     lbserver.start();
 }
