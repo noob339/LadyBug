@@ -14,6 +14,7 @@ class LadyBugServer {
     //I would like to do validation for the functions in OllamaClient
     //then harden the server
     //then continue from there and look at it all
+            //change all res content to json eventually, deal with one transfer or data
     
     private:
 
@@ -34,7 +35,7 @@ class LadyBugServer {
             //any headers I should be sending
             //should status be set right away?
 
-             std::string response;
+            std::string response;
             if (!req.has_param("prompt")) 
             {
                 response += "{\"data\":\"\", \"error\":\"Exception, must supply parameter 'prompt'.\", \"success\":false }\n";
@@ -127,11 +128,29 @@ class LadyBugServer {
             }
         }
 
-        //change all res content to json eventually, deal with one transfer or data
+        void handleDeleteModel(const httplib::Request& req, httplib::Response& res){
+            if(!req.has_param("model") ){
+                res.status = 404;
+                res.set_content("missing model name", "text/plain");
+            }
 
-        //implement handler
-        //no validation just make it work
-        //
+            nlohmann::json jReq = nlohmann::json::parse(req.body);
+
+            std::string config = jReq.at("model").get<std::string>();
+
+
+            OllamaRes deletionRes = this->cli.remove(config);
+
+            if (deletionRes.success){
+                res.status = deletionRes.status;
+                res.set_content(deletionRes.response, "text/plain"); 
+            } else {
+                res.status = 400;
+                res.set_content("unable to delete", "text/plain");
+            }
+
+        }
+
 
         void routes(){
             svr.Get("/generate", [this](const httplib::Request& req, httplib::Response& res){
@@ -144,6 +163,10 @@ class LadyBugServer {
 
             svr.Post("/create_model", [this](const auto &req, auto &res) {
                 handleModelCreation(req, res);
+            });
+
+            svr.Delete("/delete", [this](const auto &req, auto &res){
+                handleDeleteModel(req, res);
             });
         }
 
