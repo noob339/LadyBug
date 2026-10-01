@@ -223,12 +223,41 @@ class OllamaClient{
             return response;
         }
 
-         const std::string remove(std::string model){
-
-            //todo
+         const OllamaRes remove(std::string model){
 
 
-            return "model deleted\n";
+            nlohmann::json req = nlohmann::json::object();
+            req["model"] = model;
+            
+            auto res = client.Post("/api/delete", req.dump(), "application/json");
+
+            OllamaRes response;
+
+            if(!res){
+                response.response = "Connection error: " + httplib::to_string(res.error());
+                std::cerr << response.response << "\n\n"; 
+            } else if (res->status != 200){ 
+                response.response = statusError(res->status) + '\n' 
+                + "Ollama response: " + res->body;
+                std::cerr << response.response << "\n\n"; 
+            } else{
+
+                nlohmann::json oll_res;
+
+                try {
+                    oll_res = nlohmann::json::parse(res->body);
+                    response.response = "success";
+                    response.status = res->status;
+                    response.success = true;
+                } catch (const nlohmann::json::exception& ex){
+                    response.response = ex.what();
+                    std::cerr << response.response << std::endl;  
+                }
+            }
+            return response;
+
+
+
         }
 
         // const ModelConfig show(std::string model){
