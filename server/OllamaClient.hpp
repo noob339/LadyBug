@@ -85,7 +85,6 @@ class OllamaClient{
 
     public:
 
-
         OllamaClient(){
 
             client.set_connection_timeout(connectionTimeout);
@@ -101,54 +100,6 @@ class OllamaClient{
         }
 
         // OllamaClient(std::string baseAdd, httplib::Client client) 
-
-
-        // const OllamaRes generate(GenRequest& req)
-        const OllamaRes generate(const std::string prompt){
-
-            if(prompt.empty()){ //if empty return a new line, let the api consumer decide what he wants to do after that
-                return OllamaRes("\n", false);
-            }
-
-            nlohmann::json genJson = defaultJson;
-            genJson["prompt"] = prompt;
-
-
-            nlohmann::json oll_res;
-            OllamaRes response;
-
-            //http request
-            auto res = client.Post("/api/generate", genJson.dump(), "application/json");
-
-            //check response
-            if(!res){
-                response.response = "Connection error: " + httplib::to_string(res.error());
-                response.status = 500;
-                std::cerr << "status code: " << response.status << "\n" << response.response << "\n\n"; 
-            } else if (res->status != 200){ 
-                response.response = statusError(res->status) + '\n' 
-                + "Ollama response: " + res->body;
-                std::cerr << response.response << "\n\n"; 
-            } else{
-
-                try {
-                    oll_res = nlohmann::json::parse(res->body);
-
-                    //cleaner shorter but less explicit option
-                    response.response = oll_res.at("response").get<std::string>();
-                    response.success = true;
-
-                    if(oll_res["response"] == ""){
-                        response.success = false;
-                    }
-
-                } catch (const nlohmann::json::exception& ex){
-                    response.response = ex.what();
-                    std::cerr << response.response << std::endl;  
-                }
-            }
-            return response;
-        }
 
         const OllamaRes generate(const GenRequest& req) {
 
@@ -184,6 +135,13 @@ class OllamaClient{
             }
             return response;
         }
+
+        // const OllamaRes generateStream(const GenRequest& req){
+        //     //basically the above but keep looping until status = done
+        //     //I mean its gonna send a lot of responses, how to handle that?
+
+        //     return OllamaRes{};
+        // }
 
         const OllamaRes listModels(){
 
@@ -234,14 +192,6 @@ class OllamaClient{
             }
             return response;
         }
-
-        const OllamaRes generateStream(const GenRequest& req){
-            //basically the above but keep looping until status = done
-            //I mean its gonna send a lot of responses, how to handle that?
-
-            return OllamaRes{};
-        }
-
 
         const OllamaRes create(const ModelConfig& config){
             //todo
