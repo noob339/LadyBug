@@ -35,7 +35,7 @@ class GenRequest {
         bool stream = false; //one function will support stream, one will not, for now, its defaulted to false
         bool think = false; //just false for now, will think about this later
 
-
+        GenRequest(){}
         GenRequest(std::string model): model{model}{}
 
 
