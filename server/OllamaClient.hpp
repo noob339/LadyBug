@@ -27,7 +27,7 @@ struct OllamaRes {
         this->status = status;
     }
 
-    OllamaRes(std::string response, bool successm, int status){
+    OllamaRes(std::string response, bool success, int status){
         this->response = response;
         this->success = success; //many conditions where it could be false, but only one where it can be true
         this->status = status;
@@ -187,6 +187,7 @@ class OllamaClient{
 
         const OllamaRes listModels(){
 
+            //the path from server <-> ollamaclient is not hardened or verified. Need to validate data here and at Server need to handle that as well. I am seeing that event driven clicks don't really send a req, more like just asking send whatever should be sent if I click here
             //incorporate status
 
             nlohmann::json req;
@@ -207,19 +208,24 @@ class OllamaClient{
             } else{
                 try {
                     oll_res_models = nlohmann::json::parse(res->body);
+                    nlohmann::json model_list = nlohmann::json::array();
 
-                    // I need to loop through oll_res and extract the keys I need
-                    //"model", "name", "detals":"parent-model"
-                        //look at curl | jq response to develop decision tree of if, else if, else
+                    // validation of data is still needed
+                    //you have to ensure that models exists? if it doesn't there is an issue
+                    // if(!oll_res_models.contains("models")){
 
-                    //then tell codex like what to look for, what to accept and how to display it
-                    //I will dump the response and return this to ladybug server
-                    //Ladybug server will then serve this
-                    //I dont even think we need to validate in the server
-                    //then dump
+                    for(const auto & mod : oll_res_models["models"]){
+                        std::string name = mod["name"].get<std::string>();
+                        std::string model = mod["model"].get<std::string>();
+                        std::string parent = mod["details"]["parent_model"].get<std::string>();
 
-
-                    response.response = oll_res_models.dump();
+                        model_list.push_back({
+                            {"name", name},
+                            {"model", model},
+                            {"parent", parent}
+                        });
+                    }
+                    response.response = model_list.dump(); 
                     response.success = true;
                 } catch (const nlohmann::json::exception& ex){
                     response.response = ex.what();
@@ -238,11 +244,7 @@ class OllamaClient{
 
 
         const OllamaRes create(const ModelConfig& config){
-
             //todo
-
-            //pass in a model config
-            //this modelconfig we turn into json using to_json
             nlohmann::json req = config; //store it 
             nlohmann::json oll_res;
 
@@ -261,9 +263,7 @@ class OllamaClient{
 
                 try {
                     oll_res = nlohmann::json::parse(res->body);
-
-                    //cleaner shorter but less explicit option
-                    response.response = oll_res.at("status").get<std::string>();
+                    response.response = oll_res.at("status").get<std::string>(); //"success"
                     response.success = true;
                 } catch (const nlohmann::json::exception& ex){
                     response.response = ex.what();
@@ -271,7 +271,6 @@ class OllamaClient{
                 }
             }
             return response;
-
         }
 
          const std::string remove(std::string model){

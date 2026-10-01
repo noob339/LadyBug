@@ -199,8 +199,11 @@ int main(int argc, char** argv)
 
 
     httplib::Server svr;
+    OllamaClient cli;
 
-    svr.Get("/query", [test4, gptModel](const auto &req, auto &res) {
+    //why does it have to be captured by reference though ❤️❤️❤️❤️❤️❤️
+
+    svr.Get("/query", [test4, gptModel, &cli](const auto &req, auto &res) {
     
         std::string response;
         if (!req.has_param("prompt")) 
@@ -213,10 +216,10 @@ int main(int argc, char** argv)
         std::string prompt = req.get_param_value("prompt");
         
         GenRequest genReq(gptModel);
-        OllamaClient client;
+        
         genReq.setPrompt(prompt);
 
-        OllamaRes resGen = client.generate(genReq);
+        OllamaRes resGen = cli.generate(genReq);
 
         std::string model_output;
 
@@ -237,91 +240,67 @@ int main(int argc, char** argv)
         //should status be set right away?
     });
 
+    svr.Get("/model-list", [&cli](const httplib::Request& req, httplib::Response& res){
+            
+        //are ollama errors technically ladybug errors?
+        //think about it
+        //should the error client get propaagate up? Yes it should lol
+        
+        OllamaRes models;
+        
+        try {
+                models = cli.listModels();
+
+        } catch(std::exception e){
+            models.response = e.what();
+            res.status = 400;
+        }
+        
+        
+        if(models.success){
+            res.status = 200;
+            res.set_content(models.response, "application/json");
+        } else {
+            res.status = 400;
+            res.set_content("bad request", "text/plain");
+        }
+
+        //maybe oll res should send status code too
+    });
+
+
+    svr.Post("/create_model", [&cli](const httplib::Request& req, httplib::Response& res){
+        //1. check if req is valid or received aka validate
+        //2. parse
+        //3. assign validate again? na im sure not
+        //4. process
+        //5. get result
+        //done
+
+        //1
+        if(!req.has_param("model") || !req.has_param("from") ){
+            res.status = 404;
+            res.set_content("missing fields", "text/plain");
+        }
+        //maybe separate for each param missing
+
+        //2
+        nlohmann::json jReq = nlohmann::json::parse(req.body);
+        
+        //3
+        ModelConfig config = jReq;
+
+        //4 //5
+        OllamaRes creationRes = cli.create(config);
+
+        //6
+        if (creationRes.success){
+            res.status = 200;
+            res.set_content(creationRes.response, "text/plain"); // the string should be success"
+        }
+    });
+
     
-
-
-    // svr.Get("/set_context", [&model](const auto &req, auto &res) {
-    //     if(!req.has_param("ctx"))
-    //     {
-    //         res.set_content("{ \"error\":\"must have param ctx for new model context.\", \"success\":false }\n", "text/json");
-    //         return;
-    //     }
-    //     model.context = req.get_param_value("ctx");
-    //     model.to_file();
-    //     model.load_ollama();
-    //     model.warm_up();
-    //     res.set_content("{\"error\":\"\", \"success\":true}\n", "text/json");
-    // });
-
-
-    // svr.Get("/set_parameter", [&model, &type_map](const auto &req, auto &res) {
-    //     if(!req.has_param("key") || !req.has_param("value"))
-    //     {
-    //         res.set_content("{\"error\":\"must include parameters key for parameter name, and value for value.\", \"success\":false }\n", "text/json");
-    //         return;
-    //     }
-    //     if(type_map.count(req.get_param_value("key")) == 0) 
-    //     {
-    //         res.set_content("{\"error\":\"Error, invalid key: \'" + req.get_param_value("key") + "\'\", \"success\":false }\n", "text/json");
-    //         return;
-    //     }
-    //     std::string key = req.get_param_value("key");
-    //     std::string value = req.get_param_value("value");
-    //     if(!type_map[key].is_valid(value))
-    //     {
-    //         res.set_content("{\"error\":\"Error, invalid value: \'" + value + "\' for parameter: \'" + key + "\' of type: " + type_map[key].to_string() + "\", \"success\":false }\n", "text/json");
-    //         return;
-    //     }
-
-    //     std::cout << "updating param: " << key << " which is of type: " << type_map[key] << " with value: " << value << "\n";
-    //     model.parameters[req.get_param_value("key")] = req.get_param_value("value");
-        
-    //     model.to_file();
-    //     model.load_ollama();
-    //     model.warm_up();
-
-    //     res.set_content("{\"error\":\"\", \"success\":true}\n", "text/json");
-    // });
-
-    // svr.Get("/set_base_model", [&model, &base_models](const auto &req, auto &res) {
-    //     if(!req.has_param("model"))
-    //     {
-    //         std::string resp = "{\"error\":\"";
-    //         resp += "must include parameter model";
-    //         resp += "\", \"success\":false}";
-    //         res.set_content(resp, "text/json");
-    //         return;
-    //     }
-    //     std::string model_name = req.get_param_value("model");
-    //     if(base_models.count(model_name) == 0)
-    //     {
-    //         std::string resp = "{\"error\":\"";
-    //         resp += "Error, invalid model name: \'";
-    //         resp += model_name;
-    //         resp += "\'";
-    //         resp += "\", \"success\":false}";
-    //         res.set_content(resp, "text/json");
-    //         return;
-    //     }
-        
-    //     model.from_model = std::move(model_name);
-    //     model.to_file();
-    //     model.load_ollama();
-    //     model.warm_up();
-        
-    //     res.set_content(std::string("{\"info\":\"") + base_models[model.from_model].to_string() + "\", \"error\":\"\", \"success\":true}\n", "text/json");
-    // });
-
-
-    // svr.Get("/base_model_options", [&base_models](const auto &req, auto &res) {
-    //     res.set_content(jsonify(base_models), "text/json");
-    // });
-
-
-    // svr.Get("/model_parameter_options", [&type_map](const auto &req, auto &res) {
-    //     res.set_content(jsonify(type_map), "text/json");
-    // });
-
     std::cout << "Server running http://localhost:8080/." << std::endl;
     svr.listen("0.0.0.0", 8080);
 }
