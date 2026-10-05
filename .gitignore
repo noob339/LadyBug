@@ -1,4 +1,34 @@
-.sourcedive/
-.vscode/
-
+# Compiled object files and generated dependency files
 *.o
+*.d
+
+# Executables produced by your Makefile
+/main
+/test
+/a.out
+
+# Build output directory, if you use one later
+/build/
+
+# macOS debug symbols and Finder metadata
+*.dSYM/
+.DS_Store
+
+# Local development tools
+/.sourcedive/
+/.vscode/
+
+# Editor backup and swap files
+*~
+*.swp
+*.swo
+
+# Generated output and crash dumps
+/model_output.txt
+/core
+/core.*
+
+# Local environment variables and secrets
+.env
+.env.*
+!.env.example
