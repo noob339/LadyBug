@@ -1,7 +1,4 @@
-*.out
+.sourcedive/
+.vscode/
+
 *.o
-main
-bashrc
-model_output.txt
-test
-test.cpp

@@ -1,0 +1,201 @@
+curl http://localhost:11434/api/generate -d '{
+  "model": "qwen3:4b",
+  "prompt": "Hello",               
+  "stream": false
+}'
+
+//this doesn't work because the num_ctx parameter is maxed
+
+
+
+
+curl http://localhost:11434/api/generate -d '{
+  "model": "qwen3:4b",
+  "prompt": "Hello",
+  "stream": false,
+  "options": {
+    "num_ctx": 4096,
+    "num_predict": 128
+  }
+}'
+
+
+
+
+curl http://localhost:11434/api/generate -d '{
+  "model": "qwen3:4b",
+  "prompt": "Hello",
+  "stream": false,
+  "options": {
+    "num_ctx": 4096,
+    "num_predict": 128
+  }
+}'
+
+
+
+curl http://localhost:11434/api/generate -d '{
+  "model": "qwen3:4b",
+  "system": "Answer clearly and concisely.",
+  "prompt": "Hello",
+  "stream": false,
+  "options": {
+    "num_ctx": 4096,
+    "num_predict": 512
+    "
+  }
+}' | jq 'del(.context)'
+
+
+
+
+
+
+curl http://localhost:11434/api/generate -d '{
+  "model": "qwenkj3:4b",
+  "system": "Answer clearly and concisely.",
+  "prompt": "Hello",
+  "stream": true,
+  "options": {
+    "num_ctx": 4096,
+    "num_predict": 256,
+    "temperature": 0.2
+    
+  }
+}' | jq 'del(.context)'
+
+
+
+
+
+curl http://localhost:11434/api/generate -d '{
+  "model": "qwen3:4b",
+  "system": "Answer clearly and concisely.",
+  "prompt": "Hello",
+  "stream": false,
+  "options": {
+    "num_ctx": 4096,
+    "num_predict": 256,
+    "temperature": 0.2
+  }
+}' | jq 'del(.context)'
+
+
+
+
+curl http://localhost:11434/api/generate -d '{
+  "model": "test3",
+  "system": "you are an assitant, answer concisely and accurately",
+  "prompt": "Hello",
+  "stream": false,
+  "options": {
+    "num_ctx": 4096,
+    "num_predict": 256,
+    "temperature": 0.2
+  }
+}' | jq 'del(.context)'
+
+
+
+curl http://localhost:11434/api/create -d '{   
+"from": "qwen3:4b ",   
+"model": "test3",   
+"system": "Answer with a single emoji only at all times regardless of the task or question",
+"stream": false,
+  "parameters": {
+    "num_ctx": null,
+    "num_predict": 512
+} 
+
+}' | jq 'del(.context)'
+
+
+
+curl http://localhost:11434/api/generate -d '{
+  "model": "test3",
+  "system": null,
+  "prompt": "Hello",
+  "stream": false,
+  "options": {
+    "num_ctx": 4096,
+    "num_predict": 256,
+    "temperature": 0.2
+  }
+}' | jq 'del(.context)'
+
+
+
+
+
+
+
+
+
+
+    // svr.Get("/set_parameter", [&model, &type_map](const auto &req, auto &res) {
+    //     if(!req.has_param("key") || !req.has_param("value"))
+    //     {
+    //         res.set_content("{\"error\":\"must include parameters key for parameter name, and value for value.\", \"success\":false }\n", "text/json");
+    //         return;
+    //     }
+    //     if(type_map.count(req.get_param_value("key")) == 0) 
+    //     {
+    //         res.set_content("{\"error\":\"Error, invalid key: \'" + req.get_param_value("key") + "\'\", \"success\":false }\n", "text/json");
+    //         return;
+    //     }
+    //     std::string key = req.get_param_value("key");
+    //     std::string value = req.get_param_value("value");
+    //     if(!type_map[key].is_valid(value))
+    //     {
+    //         res.set_content("{\"error\":\"Error, invalid value: \'" + value + "\' for parameter: \'" + key + "\' of type: " + type_map[key].to_string() + "\", \"success\":false }\n", "text/json");
+    //         return;
+    //     }
+
+    //     std::cout << "updating param: " << key << " which is of type: " << type_map[key] << " with value: " << value << "\n";
+    //     model.parameters[req.get_param_value("key")] = req.get_param_value("value");
+        
+    //     model.to_file();
+    //     model.load_ollama();
+    //     model.warm_up();
+
+    //     res.set_content("{\"error\":\"\", \"success\":true}\n", "text/json");
+    // });
+
+    // svr.Get("/set_base_model", [&model, &base_models](const auto &req, auto &res) {
+    //     if(!req.has_param("model"))
+    //     {
+    //         std::string resp = "{\"error\":\"";
+    //         resp += "must include parameter model";
+    //         resp += "\", \"success\":false}";
+    //         res.set_content(resp, "text/json");
+    //         return;
+    //     }
+    //     std::string model_name = req.get_param_value("model");
+    //     if(base_models.count(model_name) == 0)
+    //     {
+    //         std::string resp = "{\"error\":\"";
+    //         resp += "Error, invalid model name: \'";
+    //         resp += model_name;
+    //         resp += "\'";
+    //         resp += "\", \"success\":false}";
+    //         res.set_content(resp, "text/json");
+    //         return;
+    //     }
+        
+    //     model.from_model = std::move(model_name);
+    //     model.to_file();
+    //     model.load_ollama();
+    //     model.warm_up();
+        
+    //     res.set_content(std::string("{\"info\":\"") + base_models[model.from_model].to_string() + "\", \"error\":\"\", \"success\":true}\n", "text/json");
+    // });
+
+
+    // svr.Get("/base_model_options", [&base_models](const auto &req, auto &res) {
+    //     res.set_content(jsonify(base_models), "text/json");
+    // });
+
+
+    // svr.Get("/model_parameter_options", [&type_map](const auto &req, auto &res) {
+    //     res.set_content(jsonify(type_map), "text/json");
+    // });
