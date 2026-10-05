@@ -9,6 +9,13 @@
 #include "httplib.h"
 #include "json.hpp"
 
+namespace ladybug{
+
+// status code
+// validate the incoming response from ollama api
+// error handling
+// timeouts, how to handle that
+
 struct OllamaRes {
 
     std::string response;
@@ -86,17 +93,9 @@ class OllamaClient{
     public:
 
         OllamaClient(){
-
             client.set_connection_timeout(connectionTimeout);
             client.set_write_timeout(writeTimeout);
             client.set_read_timeout(readTimeout);
-
-            //default generation settings and default model but no prompt is added, that happens later in generation
-            defaultJson = nlohmann::json::parse(R"({
-                    "model": "gpt-oss:120b-cloud",
-                    "system": "Answer clearly and concisely.",
-                    "stream": false
-                })");
         }
 
         // OllamaClient(std::string baseAdd, httplib::Client client) 
@@ -104,13 +103,12 @@ class OllamaClient{
         const OllamaRes generate(const GenRequest& req) {
 
             nlohmann::json genReq = req;
-            nlohmann::json oll_res;
+            
+            auto res = client.Post("/api/generate", genReq.dump(), "application/json");
+            
             OllamaRes response;
 
-            //http request
-            auto res = client.Post("/api/generate", genReq.dump(), "application/json");
-
-            //check response
+            //all methods use this paradigm, can it be refactored to be called? you pass in a res by ref, an OllamaRes by ref
             if(!res){
                 response.response = "Connection error: " + httplib::to_string(res.error());
                 response.status = 500;
@@ -118,18 +116,23 @@ class OllamaClient{
             } else if (res->status != 200){ 
                 response.response = statusError(res->status) + '\n' 
                 + "Ollama response: " + res->body;
+                response.status = res->status;
                 std::cerr << response.response << "\n\n"; 
             } else{
+
+                nlohmann::json oll_res;
 
                 try {
                     oll_res = nlohmann::json::parse(res->body);
 
                     //cleaner shorter but less explicit option
                     response.response = oll_res.at("response").get<std::string>();
+                    response.status = 200;
                     response.success = !response.response.empty(); //same logic as above just more succinct as it checks if empty and based on that sets success
 
                 } catch (const nlohmann::json::exception& ex){
                     response.response = ex.what();
+                    response.status = 400;
                     std::cerr << response.response << std::endl;  
                 }
             }
@@ -229,7 +232,7 @@ class OllamaClient{
             nlohmann::json req = nlohmann::json::object();
             req["model"] = model;
             
-            auto res = client.Post("/api/delete", req.dump(), "application/json");
+            auto res = client.Delete("/api/delete", req.dump(), "application/json");
 
             OllamaRes response;
 
@@ -239,24 +242,17 @@ class OllamaClient{
             } else if (res->status != 200){ 
                 response.response = statusError(res->status) + '\n' 
                 + "Ollama response: " + res->body;
+                response.status = res->status;
                 std::cerr << response.response << "\n\n"; 
             } else{
 
-                nlohmann::json oll_res;
-
-                try {
-                    oll_res = nlohmann::json::parse(res->body);
                     response.response = "success";
                     response.status = res->status;
                     response.success = true;
-                } catch (const nlohmann::json::exception& ex){
-                    response.response = ex.what();
-                    std::cerr << response.response << std::endl;  
-                }
+
             }
+
             return response;
-
-
 
         }
 
@@ -265,5 +261,7 @@ class OllamaClient{
         // }
 
 };
+
+}
 
 #endif

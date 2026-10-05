@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include "json.hpp"
 
+namespace ladybug{
+
 //STILL NEEDS TO BE TESTED
 
 
@@ -125,7 +127,7 @@ class ModelConfig {
         }
 };
 
-
+}
 
 
 #endif

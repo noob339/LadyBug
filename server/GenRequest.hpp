@@ -6,6 +6,10 @@
 #include <stdexcept>
 #include "json.hpp"
 
+namespace ladybug{
+
+
+
 struct Options{
     std::optional<int> num_ctx; 
     std::optional<int> num_predict;
@@ -128,6 +132,6 @@ class GenRequest {
 };
 
 
-
+}
 
 #endif

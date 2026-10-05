@@ -7,6 +7,8 @@
 #include "GenRequest.hpp"
 #include "httplib.h"
 
+namespace ladybug{
+
 class LadyBugServer {
 
     //this is where we implement the server that the front end uses to call it to be able to generate or create or any other endpoint 
@@ -35,22 +37,18 @@ class LadyBugServer {
             //any headers I should be sending
             //should status be set right away?
 
-            std::string response;
-            if (!req.has_param("prompt")) 
-            {
-                response += "{\"data\":\"\", \"error\":\"Exception, must supply parameter 'prompt'.\", \"success\":false }\n";
-                res.set_content(response, "text/html");
+            nlohmann::json jReq = nlohmann::json::parse(req.body);
+            OllamaRes resGen;
+
+            if (!jReq.contains("prompt")) {
+                resGen.response += "{\"data\":\"\", \"error\":\"Exception, must supply parameter 'prompt'.\", \"success\":false }\n";
+                res.status = 400; //make a method for the most needed ones
+                res.set_content(resGen.response, "text/html");
                 return;
             }
-
-
-            std::string prompt = req.get_param_value("prompt");
-            nlohmann::json jReq = nlohmann::json::parse(req.body);
-
+            
             GenRequest genReq = jReq;
-            genReq.setPrompt(prompt);
-
-            OllamaRes resGen = this->cli.generate(genReq);
+            resGen = this->cli.generate(genReq);
 
             std::string model_output;
 
@@ -81,6 +79,7 @@ class LadyBugServer {
             } catch(std::exception e){
                 models.response = e.what();
                 res.status = 400;
+                return;
             }
             
             
@@ -102,15 +101,15 @@ class LadyBugServer {
 
             //not robust but should work
 
+            nlohmann::json jReq = nlohmann::json::parse(req.body);
+
             //1
-            if(!req.has_param("model") || !req.has_param("from") ){
+            if(!jReq.contains("model") || !jReq.contains("from") ){
                 res.status = 404;
                 res.set_content("missing fields", "text/plain");
             }
             //maybe separate for each param missing
-
-            //2
-            nlohmann::json jReq = nlohmann::json::parse(req.body);
+       
             
             //3
             ModelConfig config = jReq;
@@ -129,12 +128,15 @@ class LadyBugServer {
         }
 
         void handleDeleteModel(const httplib::Request& req, httplib::Response& res){
-            if(!req.has_param("model") ){
+
+            nlohmann::json jReq = nlohmann::json::parse(req.body);
+            
+            if(!jReq.contains("model") ){
                 res.status = 404;
                 res.set_content("missing model name", "text/plain");
             }
 
-            nlohmann::json jReq = nlohmann::json::parse(req.body);
+            
 
             std::string config = jReq.at("model").get<std::string>();
 
@@ -153,7 +155,7 @@ class LadyBugServer {
 
 
         void routes(){
-            svr.Get("/generate", [this](const httplib::Request& req, httplib::Response& res){
+            svr.Post("/generate", [this](const httplib::Request& req, httplib::Response& res){
                 handleGeneration(req, res);
             });
 
@@ -190,4 +192,7 @@ class LadyBugServer {
 
 };
 
+}
+
 #endif
+

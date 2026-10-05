@@ -1,9 +1,9 @@
 #include <iostream>
-#include "ModelConfig.hpp"
-#include "OllamaClient.hpp"
 #include "LadyBugServer.hpp"
 
+namespace lb = ladybug;
+
 int main(int argc, char** argv){
-    LadyBugServer lbserver;
+    lb::LadyBugServer lbserver;
     lbserver.start();
 }
