@@ -17,6 +17,7 @@
 # Local development tools
 /.sourcedive/
 /.vscode/
+/notes
 
 # Editor backup and swap files
 *~
