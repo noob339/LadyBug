@@ -4,8 +4,10 @@
 #include <string>
 #include <chrono>
 #include <iostream>
+
 #include "json.hpp"
 #include "httplib.h"
+
 #include "ladybug/GenRequest.hpp"
 #include "ladybug/ModelConfig.hpp"
 

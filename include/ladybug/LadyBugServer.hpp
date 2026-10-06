@@ -3,6 +3,7 @@
 
 #include "json.hpp"
 #include "httplib.h"
+
 #include "ladybug/OllamaClient.hpp"
 #include "ladybug/ModelConfig.hpp"
 #include "ladybug/GenRequest.hpp"

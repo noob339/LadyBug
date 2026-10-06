@@ -1,5 +1,13 @@
 #include "ladybug/LadyBugServer.hpp"
 
+#include "json.hpp"
+#include "httplib.h"
+
+#include "ladybug/OllamaClient.hpp"
+#include "ladybug/ModelConfig.hpp"
+#include "ladybug/GenRequest.hpp"
+
+
 namespace ladybug{
 
 void LadyBugServer::handleGeneration(const httplib::Request& req, httplib::Response& res){

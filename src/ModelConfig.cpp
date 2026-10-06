@@ -1,5 +1,11 @@
 #include "ladybug/ModelConfig.hpp"
 
+#include <string>
+#include <optional>
+#include <stdexcept>
+
+#include "json.hpp"
+
 namespace ladybug{
 
 ModelConfig::ModelConfig(){}
